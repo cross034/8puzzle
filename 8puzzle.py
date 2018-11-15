@@ -3,6 +3,8 @@ import copy
 
 class Instance:
     def __init__(self, step=0, state=None, prev_instance=None, prev_move=None):
+        global count
+        count += 1
         self.distance = 0
         self.next_states = []
         self.step = step
@@ -10,7 +12,7 @@ class Instance:
         self.prev_move = prev_move
         if state:
             self.state = state
-            self.compute_distance()
+            self.compute_distance_disp()
         else:
             self.state = []
 
@@ -22,7 +24,7 @@ class Instance:
                 element = int(input())
                 row.append(element)
             self.state.append(row)
-        self.compute_distance()
+        self.compute_distance_disp()
 
     def print_state(self, label=""):
         tbp = label+"\n"
@@ -35,14 +37,15 @@ class Instance:
             tbp = tbp + "\n\n"
         print(tbp)
 
-    def get_blank_position(self):
-        for rn, r in enumerate(self.state):
-            for cn, e in enumerate(r):
-                if e == 0:
-                    return rn, cn
+    def get_position(self, element, state):
+        if state:
+            for rn, r in enumerate(state):
+                for cn, e in enumerate(r):
+                    if e == element:
+                        return rn, cn
 
     def get_possibilities(self):
-        r, c = self.get_blank_position()
+        r, c = self.get_position(0, self.state)
         possibilities = {"up": 1, "left": 1, "down": 1, "right": 1}
         if r == 0 or self.prev_move == "down":
             possibilities["up"] = 0
@@ -55,7 +58,7 @@ class Instance:
         possible_moves = [m for m, v in possibilities.items() if v == 1]
         return possible_moves
 
-    def compute_distance(self):
+    def compute_distance_disp(self):
         global final_state
         distance = 0
         for r in range(3):
@@ -65,9 +68,19 @@ class Instance:
                     # print(r, c)
         self.distance = distance + self.step
 
+    def compute_distance_man(self):
+        global final_state
+        distance = 0
+        for r in range(3):
+            for c in range(3):
+                current_pos_r, current_pos_c = self.get_position(r*3+c, self.state)
+                final_pos_r, final_pos_c = self.get_position(r*3+c, final_state)
+                distance += abs(final_pos_r-current_pos_r)+abs(final_pos_c-current_pos_c)
+        self.distance = distance + self.step
+
     def generate_next_states(self):
         possibilities = self.get_possibilities()
-        blank_r, blank_c = self.get_blank_position()
+        blank_r, blank_c = self.get_position(0, self.state)
         for p in possibilities:
             next_state = self.compute_next_state(p, blank_r, blank_c)
             self.next_states.append(Instance(self.step + 1, next_state, self, p))
@@ -109,6 +122,7 @@ class PriorityQueue:
 
 
 final_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+count = 0
 instance_queue = PriorityQueue()
 puzzle = Instance()
 puzzle.get_input()
@@ -130,6 +144,7 @@ while not solved:
         path.reverse()
         for ins in path:
             ins.print_state("step: {0}, distance: {1}".format(ins.step, ins.distance))
+        print("Count: {}".format(count))
         break
     current_instance.generate_next_states()
     for ins in current_instance.next_states:
